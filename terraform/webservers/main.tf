@@ -32,7 +32,6 @@ locals {
 }
 
 
-
 # Launch the web server instances
 resource "aws_instance" "web_server" {
   ami           = data.aws_ami.latest_amazon_linux.id
@@ -46,7 +45,6 @@ resource "aws_instance" "web_server" {
     "Name" = "${var.prefix}-WebServer"
   })
 }
-
 
 
 # # Define the key pair for SSH access
@@ -84,20 +82,20 @@ resource "aws_security_group" "web_server_sg" {
 
 resource "aws_ecr_repository" "sql" {
   name                 = "sql"  # Choose your repository name
-  image_tag_mutability = "MUTABLE"  # Optional: set the image tag mutability, default is MUTABLE
+  image_tag_mutability = "MUTABLE"  
 
   # Optional lifecycle policy (if needed)
   lifecycle {
-    prevent_destroy = true  # Prevent accidental destruction of the repository
+    prevent_destroy = true  
   }
 }
 
 resource "aws_ecr_repository" "flaskapp" {
   name                 = "flaskapp" 
-  image_tag_mutability = "MUTABLE"  # Optional: set the image tag mutability, default is MUTABLE
+  image_tag_mutability = "MUTABLE"  
 
   # Optional lifecycle policy (if needed)
   lifecycle {
-    prevent_destroy = true  # Prevent accidental destruction of the repository
+    prevent_destroy = true 
   }
 }
