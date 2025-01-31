@@ -15,8 +15,9 @@ variable "prefix" {
 # VPC CIDR range
 variable "vpc_cidr" {
   type        = string
-  description = "VPC to host static web site"
+  description = "VPC CIDR range"
 }
+
 
 #  public subnets CIDR
 variable "public_cidr_blocks" {
