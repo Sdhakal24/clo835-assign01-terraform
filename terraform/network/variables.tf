@@ -1,3 +1,4 @@
+
 # Default tags
 variable "default_tags" {
   default     = {}
@@ -16,12 +17,12 @@ variable "prefix" {
 variable "vpc_cidr" {
   default     = "10.0.0.0/16"
   type        = string
-  description = "VPC to host static web site"
+  description = "VPC to host the static web site"
 }
 
 # Provision public subnets in custom VPC
 variable "public_subnet_cidrs" {
   default     = "10.0.1.0/24"
   type        = string
-  description = " CIDRs for Public Subnet "
+  description = " CIDRs for the Public Subnet "
 }
