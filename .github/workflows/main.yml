@@ -51,21 +51,47 @@ jobs:
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v0.1.7
         with:
-          host: ${{ secrets.EC2_HOST }}  # EC2 instance public IP
-          username: ec2-user                   # EC2 instance username (could be ubuntu, ec2-user, etc.)
-          key: ${{ secrets.MY_SSH }}      # The private SSH key stored in GitHub Secrets
-          port: 22,80                             # Port 22 is standard for SSH
+          host: ${{ secrets.EC2_HOST }}         # EC2 instance public IP
+          username: ec2-user                    # EC2 instance username (could be ubuntu, ec2-user, etc.)
+          key: ${{ secrets.MY_SSH }}            # The private SSH key stored in GitHub Secrets
+          port: 22                              # Only SSH port is needed
           script: |
             # Debug info
             echo "AWS Account ID: $(aws sts get-caller-identity --query Account --output text)"
-            echo "ECR URI: $ECR_URI"
-      
+            
             ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
             REGION=us-east-1
             REPO_NAME=flaskapp
             IMAGE_TAG=latest
-      
+
+            # Construct ECR URI
             ECR_URI="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME"
+            echo "ECR URI: $ECR_URI"
+
+            # Authenticate with ECR
             aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ECR_URI
+
+            # Stop existing container (if running)
+            CONTAINER_ID=$(docker ps -q --filter ancestor=$ECR_URI:$IMAGE_TAG)
+            if [ ! -z "$CONTAINER_ID" ]; then
+              echo "Stopping existing container: $CONTAINER_ID"
+              docker stop $CONTAINER_ID
+              docker rm $CONTAINER_ID
+            fi
+
+            # Pull the latest Docker image
             docker pull $ECR_URI:$IMAGE_TAG
-            docker run -d -p 8080:8080 $ECR_URI:$IMAGE_TAG
+
+            # Run the container and expose it on port 80
+            docker run -d -p 80:8080 $ECR_URI:$IMAGE_TAG
+
+            # Verify if the container is running
+            if docker ps | grep $IMAGE_TAG; then
+              echo "Container deployed successfully!"
+            else
+              echo "Deployment failed!"
+              exit 1
+            fi
+
+            # Check if port 80 is open
+            sudo netstat -tuln | grep ':80' || echo "Service is not listening on port 80"
