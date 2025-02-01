@@ -51,7 +51,7 @@ jobs:
           docker push $ECR_URI:$IMAGE_TAG
 
           # SQL Image
-          SQL_REPO_NAM=sql
+          SQL_REPO_NAME=sql
           ECR_URI="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME"
           docker tag sql:$IMAGE_TAG $ECR_URI:$IMAGE_TAG
           docker push $ECR_URI:$IMAGE_TAG
