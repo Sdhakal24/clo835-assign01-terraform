@@ -29,23 +29,35 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      # Step 4: Build Docker Image
-      - name: Build Docker Image
+      # Step 4: Build Docker Images
+      - name: Build Docker Images
         run: |
           IMAGE_TAG=latest
+          
+          # Build Flaskapp Image
           docker build -t clo835-assign01:$IMAGE_TAG ./flaskapp
+          
+          # Build SQL Image
+          docker build -t sql:$IMAGE_TAG ./sql
 
       # Step 5: Tag & Push to ECR
       - name: Tag & Push to ECR
         run: |
           ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
           REGION=us-east-1
-          REPO_NAME=flaskapp
           IMAGE_TAG=latest
 
-          ECR_URI="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME"
-          docker tag clo835-assign01:$IMAGE_TAG $ECR_URI:$IMAGE_TAG
-          docker push $ECR_URI:$IMAGE_TAG
+          # Flaskapp Image
+          FLASK_REPO_NAME=flaskapp
+          FLASK_ECR_URI="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$FLASK_REPO_NAME"
+          docker tag clo835-assign01:$IMAGE_TAG $FLASK_ECR_URI:$IMAGE_TAG
+          docker push $FLASK_ECR_URI:$IMAGE_TAG
+
+          # SQL Image
+          SQL_REPO_NAME=sql
+          SQL_ECR_URI="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$SQL_REPO_NAME"
+          docker tag sql:$IMAGE_TAG $SQL_ECR_URI:$IMAGE_TAG
+          docker push $SQL_ECR_URI:$IMAGE_TAG
 
   deploy:
     needs: build-and-push
@@ -71,10 +83,26 @@ jobs:
 
             ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
             REGION=us-east-1
-            REPO_NAME=flaskapp
             IMAGE_TAG=latest
 
-            ECR_URI="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME"
-            aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ECR_URI
-            docker pull $ECR_URI:$IMAGE_TAG
-            docker run -d -p 8080:8080 $ECR_URI:$IMAGE_TAG
+            # Flaskapp Image
+            FLASK_REPO_NAME=flaskapp
+            FLASK_ECR_URI="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$FLASK_REPO_NAME"
+
+            # SQL Image
+            SQL_REPO_NAME=sql
+            SQL_ECR_URI="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$SQL_REPO_NAME"
+
+            # Login to ECR
+            aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $FLASK_ECR_URI
+            aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $SQL_ECR_URI
+
+            # Pull images
+            docker pull $FLASK_ECR_URI:$IMAGE_TAG
+            docker pull $SQL_ECR_URI:$IMAGE_TAG
+
+            # Run Flaskapp container
+            docker run -d -p 8080:8080 $FLASK_ECR_URI:$IMAGE_TAG
+
+            # Run SQL container
+            docker run -d -p 3306:3306 $SQL_ECR_URI:$IMAGE_TAG
