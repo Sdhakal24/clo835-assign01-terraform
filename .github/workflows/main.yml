@@ -10,11 +10,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    
       # Step 1: Checkout Code
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # Step 2: Configure AWS Credentials
+     # Step 2: Configure AWS Credentials
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -28,39 +29,30 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      # Step 4: Build Docker Images (flaskapp & sql)
-      - name: Build Docker Images
+      # Step 4: Build Docker Image
+      - name: Build Docker Image
         run: |
           IMAGE_TAG=latest
-          docker build -t clo835-assign01:$IMAGE_TAG -f flaskapp/Dockerfile .
-          docker build -t sql:$IMAGE_TAG -f flaskapp/Dockerfile_mysql .
+          docker build -t clo835-assign01:$IMAGE_TAG ./flaskapp
 
       # Step 5: Tag & Push to ECR
       - name: Tag & Push to ECR
         run: |
-          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text | tr -d '"')
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
           REGION=us-east-1
+          REPO_NAME=flaskapp
           IMAGE_TAG=latest
-          
-          # Flask App Image
-          FLASK_REPO_NAME=flaskapp
-          FLASK_ECR_URI="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$FLASK_REPO_NAME"
-          echo "Pushing FlaskApp to $FLASK_ECR_URI"
-          docker tag clo835-assign01:$IMAGE_TAG $FLASK_ECR_URI:$IMAGE_TAG
-          docker push $FLASK_ECR_URI:$IMAGE_TAG
 
-          # SQL Image
-          SQL_REPO_NAME=sql
-          SQL_ECR_URI="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$SQL_REPO_NAME"
-          echo "Pushing SQL to $SQL_ECR_URI"
-          docker tag sql:$IMAGE_TAG $SQL_ECR_URI:$IMAGE_TAG
-          docker push $SQL_ECR_URI:$IMAGE_TAG
+          ECR_URI="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME"
+          docker tag clo835-assign01:$IMAGE_TAG $ECR_URI:$IMAGE_TAG
+          docker push $ECR_URI:$IMAGE_TAG
 
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
 
     steps:
+    
       # Step 6: Checkout Code for Deployment
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -73,20 +65,16 @@ jobs:
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            # Debug info
+            echo "AWS Account ID: $(aws sts get-caller-identity --query Account --output text)"
+            echo "ECR URI: $ECR_URI"
+
             ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
             REGION=us-east-1
+            REPO_NAME=flaskapp
             IMAGE_TAG=latest
-            
-            # Flask App Deployment
-            FLASK_REPO_NAME=flaskapp
-            FLASK_ECR_URI="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$FLASK_REPO_NAME"
-            aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $FLASK_ECR_URI
-            docker pull $FLASK_ECR_URI:$IMAGE_TAG
-            docker run -d -p 8080:8080 $FLASK_ECR_URI:$IMAGE_TAG
 
-            # SQL Deployment
-            SQL_REPO_NAME=sql
-            SQL_ECR_URI="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$SQL_REPO_NAME"
-            aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $SQL_ECR_URI
-            docker pull $SQL_ECR_URI:$IMAGE_TAG
-            docker run -d -p 3306:3306 $SQL_ECR_URI:$IMAGE_TAG
+            ECR_URI="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME"
+            aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ECR_URI
+            docker pull $ECR_URI:$IMAGE_TAG
+            docker run -d -p 8080:8080 $ECR_URI:$IMAGE_TAG
