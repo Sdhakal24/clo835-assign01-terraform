@@ -47,7 +47,7 @@ jobs:
           docker tag clo835-assign01:$IMAGE_TAG $ECR_URI:$IMAGE_TAG
           docker push $ECR_URI:$IMAGE_TAG
 
-      # Step 6: Deploy to EC2
+      # Step 6: Deploy to the EC2
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v0.1.7
         with:
