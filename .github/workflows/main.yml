@@ -43,14 +43,14 @@ jobs:
           REGION=us-east-1
           
           # Flask App Image
-          REPO_NAME=flaskapp
+          FLASK_REPO_NAME=flaskapp
           IMAGE_TAG=latest
           ECR_URI="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME"
           docker tag clo835-assign01:$IMAGE_TAG $ECR_URI:$IMAGE_TAG
           docker push $ECR_URI:$IMAGE_TAG
 
           # SQL Image
-          REPO_NAME=sql
+          SQL_REPO_NAM=sql
           ECR_URI="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME"
           docker tag sql:$IMAGE_TAG $ECR_URI:$IMAGE_TAG
           docker push $ECR_URI:$IMAGE_TAG
