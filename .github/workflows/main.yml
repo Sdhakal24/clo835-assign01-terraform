@@ -33,7 +33,7 @@ jobs:
       - name: Build Docker Image
         run: |
           IMAGE_TAG=latest
-          docker build -t clo835-assign01:$IMAGE_TAG ./app
+          docker build -t clo835-assign01:$IMAGE_TAG ./flaskapp/Dockerfile
 
       # Step 5: Tag & Push to ECR
       - name: Tag & Push to ECR
