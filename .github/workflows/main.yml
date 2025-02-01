@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout Code
+      # Step 1: Checkout Codes
       - name: Checkout Code
         uses: actions/checkout@v3
 
@@ -45,6 +45,7 @@ jobs:
           ECR_URI="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME"
           docker tag clo835-assign01:$IMAGE_TAG $ECR_URI:$IMAGE_TAG
           docker push $ECR_URI:$IMAGE_TAG
+
 
       # Step 6: Deploy to EC2
       - name: Setup SSH
