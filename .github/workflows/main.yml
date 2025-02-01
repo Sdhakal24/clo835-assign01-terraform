@@ -1,0 +1,73 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - master   # Trigger only on merges to the master branch
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout Code
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # Step 2: Configure AWS Credentials
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      # Step 3: Login to Amazon ECR
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      # Step 4: Build Docker Image
+      - name: Build Docker Image
+        run: |
+          IMAGE_TAG=latest
+          docker build -t myapp:$IMAGE_TAG ./app
+
+      # Step 5: Tag & Push Image to ECR
+      - name: Tag & Push to ECR
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          REGION=us-east-1
+          REPO_NAME=myapp-repo
+          IMAGE_TAG=latest
+
+          ECR_URI="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME"
+          docker tag myapp:$IMAGE_TAG $ECR_URI:$IMAGE_TAG
+          docker push $ECR_URI:$IMAGE_TAG
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 6: Checkout Code for Deployment
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # Step 7: SSH into EC2 and Deploy Container
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_PUBLIC_IP }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+            REGION=us-east-1
+            REPO_NAME=myapp-repo
+            IMAGE_TAG=latest
+
+            ECR_URI="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME"
+            aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ECR_URI
+            docker pull $ECR_URI:$IMAGE_TAG
+            docker run -d -p 8080:8080 $ECR_URI:$IMAGE_TAG
