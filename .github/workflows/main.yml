@@ -32,6 +32,7 @@ jobs:
       # Step 4: Build Docker Images (flaskapp & sql)
       - name: Build Docker Images
         run: |
+          cd flaskapp/
           IMAGE_TAG=latest
           docker build -t clo835-assign01:$IMAGE_TAG -f Dockerfile .
           docker build -t sql:$IMAGE_TAG -f Dockerfile_mysql .
