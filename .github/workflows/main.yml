@@ -71,7 +71,7 @@ jobs:
 
             ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
             REGION=us-east-1
-            REPO_NAME=clo835-assign01
+            REPO_NAME=flaskapp
             IMAGE_TAG=latest
 
             ECR_URI="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME"
