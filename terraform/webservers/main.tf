@@ -78,6 +78,7 @@ resource "aws_security_group" "web_server_sg" {
   })
 }
 
+# Aws repository for sql
 resource "aws_ecr_repository" "sql" {
   name                 = "sql"  
   image_tag_mutability = "MUTABLE"  
@@ -86,6 +87,8 @@ resource "aws_ecr_repository" "sql" {
   }
 }
 
+
+# Aws repository for sql
 resource "aws_ecr_repository" "flaskapp" {
   name                 = "flaskapp" 
   image_tag_mutability = "MUTABLE"  
