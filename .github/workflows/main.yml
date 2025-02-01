@@ -3,13 +3,14 @@ name: CI/CD Pipeline
 on:
   push:
     branches:
-      - main   # Trigger only on merges to the main branch
+      - main   
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
 
     steps:
+    
       # Step 1: Checkout Code
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -50,6 +51,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    
       # Step 6: Checkout Code for Deployment
       - name: Checkout Code
         uses: actions/checkout@v3
