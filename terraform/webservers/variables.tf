@@ -12,7 +12,6 @@ variable "default_tags" {
   default     = {}
 }
 
-
 # Name prefix
 variable "prefix" {
   type        = string
@@ -20,7 +19,7 @@ variable "prefix" {
   description = "Name prefix"
 }
 
-# SSH Key Path
+# SSH public Key Path
 variable "ssh_public_key_path" {
   type        = string
   description = "Path to the SSH public key file"
