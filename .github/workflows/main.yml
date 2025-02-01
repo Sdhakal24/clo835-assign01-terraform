@@ -46,28 +46,31 @@ jobs:
           docker tag clo835-assign01:$IMAGE_TAG $ECR_URI:$IMAGE_TAG
           docker push $ECR_URI:$IMAGE_TAG
 
-
-      # Step 6: Deploy to EC2
+      # Step 6: Setup SSH
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.MY_SSH }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
+          ls -l ~/.ssh/id_rsa  # Debug: Check if the key file exists and has correct permissions
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+          cat ~/.ssh/known_hosts  # Debug: Check if the known_hosts file is populated
 
+      # Step 7: Deploy to EC2
       - name: Deploy to EC2
         run: |
-
           ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
           REGION=us-east-1
           REPO_NAME=flaskapp
           IMAGE_TAG=latest
           ECR_URI="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME"
 
+          echo "Testing SSH connection..."
+          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_HOST }} "echo 'SSH connection successful!'"
+
+          echo "Deploying to EC2..."
           ssh -i ~/.ssh/id_rsa ec2-user@${{ secrets.EC2_HOST }} << 'EOF'
           aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ECR_URI
-            
           docker pull $ECR_URI:$IMAGE_TAG
           docker run -d --name my_container -p 80:8080 $ECR_URI:$IMAGE_TAG
-
           EOF
