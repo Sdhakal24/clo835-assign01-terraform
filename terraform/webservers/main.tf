@@ -22,7 +22,6 @@ data "terraform_remote_state" "network" {
   }
 }
 
-
 # Local variables
 locals {
   default_tags = merge(
@@ -30,7 +29,6 @@ locals {
   )
   name_prefix = var.prefix
 }
-
 
 # Launch the web server instances
 resource "aws_instance" "web_server" {
@@ -81,10 +79,8 @@ resource "aws_security_group" "web_server_sg" {
 }
 
 resource "aws_ecr_repository" "sql" {
-  name                 = "sql"  # Choose your repository name
+  name                 = "sql"  
   image_tag_mutability = "MUTABLE"  
-
-  # Optional lifecycle policy (if needed)
   lifecycle {
     prevent_destroy = true  
   }
@@ -93,8 +89,6 @@ resource "aws_ecr_repository" "sql" {
 resource "aws_ecr_repository" "flaskapp" {
   name                 = "flaskapp" 
   image_tag_mutability = "MUTABLE"  
-
-  # Optional lifecycle policy (if needed)
   lifecycle {
     prevent_destroy = true 
   }
