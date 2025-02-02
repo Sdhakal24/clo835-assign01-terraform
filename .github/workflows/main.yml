@@ -28,27 +28,56 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      # Step 4: Build Docker Images for Flask App and SQL
-      - name: Build Docker Images
+      # Step 4: Build, Test, Tag, and Push Flask App Image
+      - name: Build, Test, Tag, and Push Flask App Image to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: flaskapp
+          IMAGE_TAG: latest
         run: |
-          IMAGE_TAG=latest
-          docker build -t clo835-flaskapp:$IMAGE_TAG ./flaskapp
-          docker build -t clo835-sql:$IMAGE_TAG ./sql
+          cd flaskapp
+          ls -ltra
+          # Docker build command
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          
+          # Unit test (basic HTTP check)
+          docker run -d -p 80:8080 --name flaskapp_test $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker ps
+          echo "Pause for 10 seconds to let Flask app start"
+          sleep 10
+          curl -I http://localhost:80
+          
+          # Clean up the test container
+          docker stop flaskapp_test
+          docker rm flaskapp_test
 
-      # Step 5: Tag & Push Docker Images to ECR
-      - name: Tag & Push to ECR
+          # Push to ECR
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      # Step 5: Build, Test, Tag, and Push SQL Image
+      - name: Build, Test, Tag, and Push SQL Image to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: sql
+          IMAGE_TAG: latest
         run: |
-          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-          REGION=us-east-1
+          cd sql
+          ls -ltra
+          # Docker build command
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
 
-          # Flask App Image
-          FLASKAPP_REPO_NAME=flaskapp
-          FLASKAPP_ECR_URI="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$FLASKAPP_REPO_NAME"
-          docker tag clo835-flaskapp:latest $FLASKAPP_ECR_URI:latest
-          docker push $FLASKAPP_ECR_URI:latest
+          # Unit test (check if SQL container starts properly)
+          docker run -d -p 3306:3306 --name sql_test $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker ps
+          echo "Pause for 10 seconds to let SQL container start"
+          sleep 10
+          
+          # Check if MySQL is running
+          docker logs sql_test
 
-          # SQL Image
-          SQL_REPO_NAME=sql
-          SQL_ECR_URI="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$SQL_REPO_NAME"
-          docker tag clo835-sql:latest $SQL_ECR_URI:latest
-          docker push $SQL_ECR_URI:latest
+          # Clean up the test container
+          docker stop sql_test
+          docker rm sql_test
+
+          # Push to ECR
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
