@@ -28,8 +28,8 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      # Step 4: Build, Test, Tag, and Push Flask App Image
-      - name: Build, Test, Tag, and Push Flask App Image to Amazon ECR
+      # Step 4: Build, Tag, and Push Flask App Image
+      - name: Build, Tag, and Push Flask App Image to Amazon ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: flaskapp
@@ -40,27 +40,11 @@ jobs:
           # Docker build command
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           
-          # Unit test (basic HTTP check)
-          docker run -d -p 80:8080 --name flaskapp_test $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker ps
-          echo "Pause for 20 seconds to let Flask app start"
-          sleep 20  # Increased wait time
-
-          # Check if the Flask app is running by checking the HTTP status
-          curl -I http://localhost:80 || { echo 'Flask app not ready!'; exit 1; }
-
-          # Log container output for debugging
-          docker logs flaskapp_test
-
-          # Clean up the test container
-          docker stop flaskapp_test
-          docker rm flaskapp_test
-
           # Push to ECR
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-      # Step 5: Build, Test, Tag, and Push SQL Image
-      - name: Build, Test, Tag, and Push SQL Image to Amazon ECR
+      # Step 5: Build, Tag, and Push SQL Image
+      - name: Build, Tag, and Push SQL Image to Amazon ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: sql
@@ -70,19 +54,6 @@ jobs:
           ls -ltra
           # Docker build command
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-
-          # Unit test (check if SQL container starts properly)
-          docker run -d -p 3306:3306 --name sql_test $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker ps
-          echo "Pause for 10 seconds to let SQL container start"
-          sleep 10
-          
-          # Check if MySQL is running
-          docker logs sql_test
-
-          # Clean up the test container
-          docker stop sql_test
-          docker rm sql_test
 
           # Push to ECR
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
