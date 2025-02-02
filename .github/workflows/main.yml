@@ -43,10 +43,15 @@ jobs:
           # Unit test (basic HTTP check)
           docker run -d -p 80:8080 --name flaskapp_test $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker ps
-          echo "Pause for 10 seconds to let Flask app start"
-          sleep 10
-          curl -I http://localhost:80
-          
+          echo "Pause for 20 seconds to let Flask app start"
+          sleep 20  # Increased wait time
+
+          # Check if the Flask app is running by checking the HTTP status
+          curl -I http://localhost:80 || { echo 'Flask app not ready!'; exit 1; }
+
+          # Log container output for debugging
+          docker logs flaskapp_test
+
           # Clean up the test container
           docker stop flaskapp_test
           docker rm flaskapp_test
