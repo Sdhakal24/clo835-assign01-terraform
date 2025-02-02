@@ -52,7 +52,7 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.MY_SSH }}
 
-      # Step 7: Deploy to EC2
+      # Step 7: Deploy to the EC2
       - name: Deploy to EC2
         env:
           REGION: us-east-1
