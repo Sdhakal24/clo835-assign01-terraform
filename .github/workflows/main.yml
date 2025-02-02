@@ -1,10 +1,8 @@
 name: CI/CD Pipeline
-
 on:
   push:
     branches:
       - main   
-
 jobs:
   ci-cd-pipeline:
     runs-on: ubuntu-latest
@@ -14,7 +12,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # Step 2: Configure AWS Credentials
+      # Step 2: Configure the AWS Credentials
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -52,7 +50,7 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.MY_SSH }}
 
-      # Step 7: Deploy to the EC2
+      # Step 7: Deploy to EC2
       - name: Deploy to EC2
         env:
           REGION: us-east-1
