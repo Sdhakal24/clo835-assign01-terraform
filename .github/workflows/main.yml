@@ -37,23 +37,25 @@ jobs:
         run: |
           cd flaskapp
           ls -ltra
-          # Docker build command
+          # Docker build command for Flask app
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           
-          # Push to ECR
+          # Push Flask app image to ECR
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-      # Step 5: Build, Tag, and Push SQL Image
+      # Step 5: Build, Tag, and Push SQL Image to Amazon ECR
       - name: Build, Tag, and Push SQL Image to Amazon ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: sql
           IMAGE_TAG: latest
         run: |
+          # Navigate to sql directory
           cd sql
           ls -ltra
-          # Docker build command
+          
+          # Docker build command for SQL image
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-
-          # Push to ECR
+          
+          # Push SQL image to ECR
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
