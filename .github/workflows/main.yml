@@ -1,8 +1,10 @@
 name: CI/CD Pipeline
+
 on:
   push:
     branches:
       - main   
+
 jobs:
   ci-cd-pipeline:
     runs-on: ubuntu-latest
@@ -12,7 +14,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      # Step 2: Configure the AWS Credentials
+      # Step 2: Configure AWS Credentials
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -26,48 +28,27 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      # Step 4: Build Docker Image
-      - name: Build Docker Image
+      # Step 4: Build Docker Images for Flask App and SQL
+      - name: Build Docker Images
         run: |
           IMAGE_TAG=latest
-          docker build -t clo835-assign01:$IMAGE_TAG ./flaskapp
+          docker build -t clo835-flaskapp:$IMAGE_TAG ./flaskapp
+          docker build -t clo835-sql:$IMAGE_TAG ./sql
 
-      # Step 5: Tag & Push Docker Image to ECR
+      # Step 5: Tag & Push Docker Images to ECR
       - name: Tag & Push to ECR
         run: |
           ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
           REGION=us-east-1
-          REPO_NAME=flaskapp
-          IMAGE_TAG=latest
 
-          ECR_URI="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME"
-          docker tag clo835-assign01:$IMAGE_TAG $ECR_URI:$IMAGE_TAG
-          docker push $ECR_URI:$IMAGE_TAG
+          # Flask App Image
+          FLASKAPP_REPO_NAME=flaskapp
+          FLASKAPP_ECR_URI="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$FLASKAPP_REPO_NAME"
+          docker tag clo835-flaskapp:latest $FLASKAPP_ECR_URI:latest
+          docker push $FLASKAPP_ECR_URI:latest
 
-      # Step 6: Setup SSH Agent with Private Key
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.8.0
-        with:
-          ssh-private-key: ${{ secrets.MY_SSH }}
-
-      # Step 7: Deploy to EC2
-      - name: Deploy to EC2
-        env:
-          REGION: us-east-1
-          IMAGE_TAG: latest
-        run: |
-          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-          REPO_NAME=flaskapp
-          ECR_URI="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$REPO_NAME"
-
-          echo "Testing SSH connection..."
-          ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_HOST }} "echo 'SSH connection successful!'"
-
-          echo "Deploying to EC2..."
-          ssh ec2-user@${{ secrets.EC2_HOST }} << EOF
-            aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $ECR_URI
-            docker pull $ECR_URI:$IMAGE_TAG
-            docker stop my_container || true
-            docker rm my_container || true
-            docker run -d --name my_container -p 80:8080 $ECR_URI:$IMAGE_TAG
-          EOF
+          # SQL Image
+          SQL_REPO_NAME=sql
+          SQL_ECR_URI="$ACCOUNT_ID.dkr.ecr.$REGION.amazonaws.com/$SQL_REPO_NAME"
+          docker tag clo835-sql:latest $SQL_ECR_URI:latest
+          docker push $SQL_ECR_URI:latest
