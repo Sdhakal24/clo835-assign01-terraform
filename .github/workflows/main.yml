@@ -50,12 +50,12 @@ jobs:
           ECR_REPOSITORY: sql
           IMAGE_TAG: latest
         run: |
-          # Navigate to sql directory
-          cd sql
-          ls -ltra
-          
+          # Navigate to flaskapp/sql directory (if sql is inside flaskapp)
+          cd flaskapp/sql
+          ls -ltra  # Verify sql directory contents
           # Docker build command for SQL image
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          
           # Push SQL image to ECR
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+
